@@ -96,8 +96,12 @@ function App() {
 
       localStorage.setItem('neonPlayerAlias', userFound.username);
       setPlayerName(userFound.username);
-      setHasStarted(true);
-      restart();
+      
+      // 🚀 BROWSER PASSWORD MANAGER HACK: Form gayab hone se pehle browser ko save karne ka thoda waqt milega
+      setTimeout(() => {
+        setHasStarted(true);
+        restart();
+      }, 200);
     }
   };
 
@@ -229,11 +233,11 @@ function App() {
             <form onSubmit={handleAuthSubmit} className="flex flex-col gap-4">
               <div>
                 <label className="text-[9px] font-bold text-gray-400 tracking-widest uppercase block mb-1">HACKER ALIAS</label>
-                <input type="text" name="username" autocomplete="username" placeholder="ENTER ALIAS" maxLength="12" value={playerName} onChange={(e) => setPlayerName(e.target.value)} className="bg-[#050505] border border-gray-700 text-[#00f3ff] px-4 py-3 rounded focus:outline-none focus:border-[#00f3ff] text-center font-bold tracking-widest w-full" required />
+                <input type="text" name="username" id="login-username" autoComplete="username" placeholder="ENTER ALIAS" maxLength="12" value={playerName} onChange={(e) => setPlayerName(e.target.value)} className="bg-[#050505] border border-gray-700 text-[#00f3ff] px-4 py-3 rounded focus:outline-none focus:border-[#00f3ff] text-center font-bold tracking-widest w-full" required />
               </div>
               <div>
                 <label className="text-[9px] font-bold text-gray-400 tracking-widest uppercase block mb-1">ENCRYPTION ACCESS KEY</label>
-                <input type="password" name="password" autocomplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-[#050505] border border-gray-700 text-[#bc13fe] px-4 py-3 rounded focus:outline-none focus:border-[#bc13fe] text-center font-mono tracking-widest w-full" required />
+                <input type="password" name="password" id="login-password" autoComplete="current-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-[#050505] border border-gray-700 text-[#bc13fe] px-4 py-3 rounded focus:outline-none focus:border-[#bc13fe] text-center font-mono tracking-widest w-full" required />
               </div>
               {authError && <p className="text-red-500 text-[10px] font-black tracking-wider text-center animate-pulse">❌ {authError}</p>}
               <button type="submit" className="w-full font-black tracking-widest py-3 rounded transition-all text-black mt-2 bg-[#00f3ff] shadow-[0_0_15px_rgba(0,243,255,0.4)] hover:bg-white">INITIALIZE UPLINK</button>
@@ -242,11 +246,11 @@ function App() {
             <form onSubmit={handleAuthSubmit} className="flex flex-col gap-4">
               <div>
                 <label className="text-[9px] font-bold text-gray-400 tracking-widest uppercase block mb-1">NEW HACKER ALIAS</label>
-                <input type="text" name="username" autocomplete="username" placeholder="CREATE ALIAS" maxLength="12" value={playerName} onChange={(e) => setPlayerName(e.target.value)} className="bg-[#050505] border border-gray-700 text-[#00f3ff] px-4 py-3 rounded focus:outline-none focus:border-[#00f3ff] text-center font-bold tracking-widest w-full" required />
+                <input type="text" name="username" id="reg-username" autoComplete="username" placeholder="CREATE ALIAS" maxLength="12" value={playerName} onChange={(e) => setPlayerName(e.target.value)} className="bg-[#050505] border border-gray-700 text-[#00f3ff] px-4 py-3 rounded focus:outline-none focus:border-[#00f3ff] text-center font-bold tracking-widest w-full" required />
               </div>
               <div>
                 <label className="text-[9px] font-bold text-gray-400 tracking-widest uppercase block mb-1">NEW ENCRYPTION ACCESS KEY</label>
-                <input type="password" name="password" autocomplete="new-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-[#050505] border border-gray-700 text-[#bc13fe] px-4 py-3 rounded focus:outline-none focus:border-[#bc13fe] text-center font-mono tracking-widest w-full" required />
+                <input type="password" name="password" id="reg-password" autoComplete="new-password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} className="bg-[#050505] border border-gray-700 text-[#bc13fe] px-4 py-3 rounded focus:outline-none focus:border-[#bc13fe] text-center font-mono tracking-widest w-full" required />
               </div>
               {authError && <p className="text-red-500 text-[10px] font-black tracking-wider text-center animate-pulse">❌ {authError}</p>}
               {authSuccess && <p className="text-green-400 text-[10px] font-black tracking-wider text-center">✔ {authSuccess}</p>}
