@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+/* Tailwind v4 custom colors */
+@theme {
+  --color-neonBlue: #00f3ff;
+  --color-neonPurple: #bc13fe;
+  --color-darkBg: #050505;
+  --color-gridBg: #1f2833;
+}
+
+body {
+  background-color: var(--color-darkBg);
+  color: white;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow-x: hidden;
+  touch-action: none; /* Mobile mein scroll hone se rokega */
+}
+
+/* Premium Cyberpunk Background */
+.cyber-bg {
+  position: fixed;
+  top: 0; left: 0; width: 100vw; height: 100vh;
+  z-index: -1;
+  background-color: #050505;
+  background-image: 
+    linear-gradient(rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 243, 255, 0.05) 1px, transparent 1px),
+    radial-gradient(circle at 50% 50%, rgba(188, 19, 254, 0.08) 0%, transparent 60%);
+  background-size: 40px 40px, 40px 40px, 100vw 100vh;
+  animation: panGrid 20s linear infinite;
+}
+
+@keyframes panGrid {
+  0% { background-position: 0 0, 0 0, center; }
+  100% { background-position: 40px 40px, 40px 40px, center; }
+}
+
+/* Glassmorphism Panels */
+.glass-panel {
+  background: rgba(17, 17, 17, 0.85);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 243, 255, 0.2);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+}
+
+/* Tile Spawn & Merge Animations */
+@keyframes spawnAndPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-pop {
+  animation: spawnAndPop 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* Continuous Glow Pulse for High Value Tiles */
+@keyframes neonPulse {
+  0%, 100% { box-shadow: 0 0 20px rgba(0, 243, 255, 0.6), inset 0 0 10px rgba(0, 243, 255, 0.4); }
+  50% { box-shadow: 0 0 40px rgba(0, 243, 255, 1), inset 0 0 20px rgba(0, 243, 255, 0.8); transform: scale(1.02); }
+}
+
+.tile-win-pulse {
+  animation: neonPulse 2s infinite ease-in-out;
+}
+/* --- EXTRA HACKER VIBES (CRT & CURSOR) --- */
+
+/* 1. Neon Crosshair Cursor for the whole game */
+body {
+  cursor: crosshair;
+}
+
+button, input {
+  cursor: pointer;
+}
+
+/* 2. CRT Monitor Scanline Effect (Adds old TV lines over the game) */
+body::before {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+  z-index: 100;
+  background-size: 100% 2px, 3px 100%;
+  pointer-events: none; /* Make sure it doesn't block clicks/swipes */
+}
+
+/* Screen Flicker Animation to make it look realistic */
+@keyframes flicker {
+  0% { opacity: 0.95; }
+  5% { opacity: 0.85; }
+  10% { opacity: 0.95; }
+  15% { opacity: 1; }
+  100% { opacity: 1; }
+}
+
+body::after {
+  content: " ";
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: rgba(0, 243, 255, 0.02);
+  z-index: 100;
+  pointer-events: none;
+  animation: flicker 0.15s infinite;
+}
