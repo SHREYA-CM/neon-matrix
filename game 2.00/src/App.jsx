@@ -5,6 +5,9 @@ import { useGame } from './hooks/useGame';
 import { useSwipe } from './hooks/useSwipe';
 import GameBoard from './components/GameBoard';
 
+// 🔗 MAIN BACKEND LIVE LINK CONNECTIVITY
+const API_BASE_URL = 'https://neon-matrix.onrender.com'; 
+
 function App() {
   const { 
     board, score, bestScore, highestTile, gameState, history, leaderboard, 
@@ -37,7 +40,7 @@ function App() {
   useEffect(() => {
     const captureInstallPrompt = (e) => {
       e.preventDefault();
-      setDeferredPrompt(e); // Store event to trigger custom UI button
+      setDeferredPrompt(e); 
     };
     window.addEventListener('beforeinstallprompt', captureInstallPrompt);
     return () => window.removeEventListener('beforeinstallprompt', captureInstallPrompt);
@@ -51,14 +54,15 @@ function App() {
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
-    deferredPrompt.prompt(); // Show standard browser prompt
+    deferredPrompt.prompt(); 
     const { outcome } = await deferredPrompt.userChoice;
     if (outcome === 'accepted') {
-      setDeferredPrompt(null); // Clear prompt state on success
+      setDeferredPrompt(null); 
     }
   };
 
-  const handleAuthSubmit = (e) => {
+  // 🛠️ REAL-TIME LIVE API CORE AUTHENTICATION
+  const handleAuthSubmit = async (e) => {
     e.preventDefault();
     setAuthError('');
     setAuthSuccess('');
@@ -69,36 +73,45 @@ function App() {
       return;
     }
 
-    const localUsers = JSON.parse(localStorage.getItem('neonMatrixUsers')) || [];
+    try {
+      if (authTab === 'REGISTER') {
+        // 📤 POST request to Render Backend for Registration
+        const response = await fetch(`${API_BASE_URL}/register`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: usernameClean, password })
+        });
+        
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'REGISTRATION LINK ACCESS DENIED');
 
-    if (authTab === 'REGISTER') {
-      const userExists = localUsers.some(u => u.username.toLowerCase() === usernameClean.toLowerCase());
-      if (userExists) {
-        setAuthError('ALIAS ALREADY ACCESS-DENIED (TAKEN)');
-        return;
+        setAuthSuccess('REGISTRATION SUCCESSFUL! SWITCHING TO LOGIN MAIN_FRAME...');
+        setTimeout(() => {
+          setAuthTab('LOGIN');
+          setPassword('');
+          setAuthSuccess('');
+        }, 1500);
+
+      } else {
+        // 📥 POST request to Render Backend for Login Verification
+        const response = await fetch(`${API_BASE_URL}/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: usernameClean, password })
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'INVALID ALIAS OR ACCESS KEY');
+
+        // Session setup upon successful authentication responses
+        localStorage.setItem('neonPlayerAlias', data.username || usernameClean);
+        setPlayerName(data.username || usernameClean);
+        setHasStarted(true);
+        restart();
       }
-
-      localUsers.push({ username: usernameClean, password: btoa(password) });
-      localStorage.setItem('neonMatrixUsers', JSON.stringify(localUsers));
-      
-      setAuthSuccess('REGISTRATION SUCCESSFUL! SWITCHING TO LOGIN...');
-      setTimeout(() => {
-        setAuthTab('LOGIN');
-        setPassword('');
-        setAuthSuccess('');
-      }, 1500);
-
-    } else {
-      const userFound = localUsers.find(u => u.username.toLowerCase() === usernameClean.toLowerCase() && u.password === btoa(password));
-      if (!userFound) {
-        setAuthError('INVALID ALIAS OR ENCRYPTION KEY (PASSWORD)');
-        return;
-      }
-
-      localStorage.setItem('neonPlayerAlias', userFound.username);
-      setPlayerName(userFound.username);
-      setHasStarted(true);
-      restart();
+    } catch (err) {
+      // Catch network server errors or custom backend errors
+      setAuthError(err.message || 'SERVER CORE OFFLINE - TRY AGAIN');
     }
   };
 
@@ -158,7 +171,6 @@ function App() {
         </div>
         
         <div className="flex gap-2 items-center">
-          {/* 📥 IN-APP EXTRA SYSTEM UPGRADE INSTALLER ACTION BUTTON */}
           {deferredPrompt && (
             <button onClick={handleInstallClick} className="text-[9px] font-black text-[#00f3ff] border border-[#00f3ff] px-2 py-1 rounded bg-black/50 hover:bg-[#00f3ff] hover:text-black transition-all backdrop-blur-md animate-pulse tracking-widest">
               📥 INSTALL APP
