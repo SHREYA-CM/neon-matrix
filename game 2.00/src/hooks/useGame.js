@@ -3,6 +3,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { initializeBoard, moveBoard, checkGameOver, checkWin, getHighestTile } from '../utils/gameLogic';
 import { playMergeSound, playGameOverSound } from '../utils/audio';
 
+// 🔗 LIVE BACKEND LEADERBOARD ENDPOINT
+const LEADERBOARD_API_URL = 'https://neon-matrix.onrender.com/api/leaderboard';
+
 export const useGame = () => {
   const [board, setBoard] = useState(initializeBoard());
   const [score, setScore] = useState(0);
@@ -13,15 +16,15 @@ export const useGame = () => {
   const [leaderboard, setLeaderboard] = useState(() => JSON.parse(localStorage.getItem('neonLeaderboard')) || []);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // --- BULLETPROOF SMART SYNC: STATS ---
+  // --- STATS SYSTEM ---
   const [stats, setStats] = useState(() => {
     const savedStats = JSON.parse(localStorage.getItem('neonStats')) || {};
     const savedLeaderboard = JSON.parse(localStorage.getItem('neonLeaderboard')) || [];
     
-    // Find the highest tile ever achieved in previous games
     let historicalHighest = 0;
     savedLeaderboard.forEach(entry => {
-      if (entry.highestTile > historicalHighest) historicalHighest = entry.highestTile;
+      const tile = entry.highestTile || 0;
+      if (tile > historicalHighest) historicalHighest = tile;
     });
 
     return { 
@@ -32,14 +35,15 @@ export const useGame = () => {
     };
   });
   
-  // --- BULLETPROOF SMART SYNC: ACHIEVEMENTS ---
+  // --- ACHIEVEMENTS SYSTEM ---
   const [achievements, setAchievements] = useState(() => {
     const savedAchievements = JSON.parse(localStorage.getItem('neonAchievements')) || {};
     const savedLeaderboard = JSON.parse(localStorage.getItem('neonLeaderboard')) || [];
     
     let historicalHighest = 0;
     savedLeaderboard.forEach(entry => {
-      if (entry.highestTile > historicalHighest) historicalHighest = entry.highestTile;
+      const tile = entry.highestTile || 0;
+      if (tile > historicalHighest) historicalHighest = tile;
     });
 
     return {
@@ -54,7 +58,25 @@ export const useGame = () => {
   const [recentAchievement, setRecentAchievement] = useState(null);
   const achievementTimeout = useRef(null);
 
-  // Safe Stats Updater (Prevents Stale Closures)
+  // 📥 FETCH LIVE RANKINGS FROM RENDER
+  const fetchLiveLeaderboard = useCallback(async () => {
+    try {
+      const response = await fetch(LEADERBOARD_API_URL);
+      if (response.ok) {
+        const data = await response.json();
+        setLeaderboard(data);
+        localStorage.setItem('neonLeaderboard', JSON.stringify(data));
+      }
+    } catch (err) {
+      console.error("Leaderboard uplink sync failed:", err);
+    }
+  }, []);
+
+  // Fetch rankings automatically when game loads
+  useEffect(() => {
+    fetchLiveLeaderboard();
+  }, [fetchLiveLeaderboard]);
+
   const updateStats = useCallback((updater) => {
     setStats(prev => {
       const updates = typeof updater === 'function' ? updater(prev) : updater;
@@ -64,7 +86,6 @@ export const useGame = () => {
     });
   }, []);
 
-  // Safe Achievement Unlocker
   const unlockAchievement = useCallback((key, title) => {
     setAchievements(prev => {
       if (prev[key]) return prev; 
@@ -106,26 +127,25 @@ export const useGame = () => {
     }
   }, [history]);
 
-  const saveToLeaderboard = useCallback((playerName) => {
-    setLeaderboard(prev => {
-      const currentBoard = [...prev];
-      const existingPlayerIndex = currentBoard.findIndex(p => p.name.toUpperCase() === playerName.toUpperCase());
-      const currentHighestTile = getHighestTile(board);
+  // 📤 POST HIGH SCORE TO RENDER LIVE SERVER
+  const saveToLeaderboard = useCallback(async (playerName) => {
+    if (score <= 0) return;
+    
+    try {
+      const response = await fetch(LEADERBOARD_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ playerName, score })
+      });
 
-      if (existingPlayerIndex !== -1) {
-        if (score > currentBoard[existingPlayerIndex].score) {
-          currentBoard[existingPlayerIndex].score = score;
-          currentBoard[existingPlayerIndex].highestTile = Math.max(currentBoard[existingPlayerIndex].highestTile, currentHighestTile);
-        }
-      } else {
-        currentBoard.push({ name: playerName, score, highestTile: currentHighestTile });
+      if (response.ok) {
+        // Refresh ranks from server on successful submission
+        fetchLiveLeaderboard();
       }
-      
-      const newLeaderboard = currentBoard.sort((a, b) => b.score - a.score).slice(0, 5);
-      localStorage.setItem('neonLeaderboard', JSON.stringify(newLeaderboard));
-      return newLeaderboard;
-    });
-  }, [board, score]);
+    } catch (err) {
+      console.error("Score submission grid failure:", err);
+    }
+  }, [score, fetchLiveLeaderboard]);
 
   const handleMove = useCallback((direction) => {
     if (gameState !== 'PLAYING') return;
@@ -134,9 +154,7 @@ export const useGame = () => {
     if (hasChanged) {
       if (soundEnabled) playMergeSound();
       
-      // Increment moves safely
       updateStats(prev => ({ totalMoves: prev.totalMoves + 1 }));
-      
       if (scoreToAdd > 0) unlockAchievement('firstMerge', '🏆 FIRST MERGE');
 
       setHistory(prev => [...prev, { board, score }]);
@@ -145,7 +163,6 @@ export const useGame = () => {
       const newHighest = getHighestTile(newBoard);
       setHighestTile(newHighest);
       
-      // Track Highest Tile in Stats safely
       updateStats(prev => ({ highestTile: Math.max(prev.highestTile || 0, newHighest) }));
 
       if (newHighest >= 128) unlockAchievement('reach128', '🏆 REACHED 128');

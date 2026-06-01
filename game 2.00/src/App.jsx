@@ -5,9 +5,6 @@ import { useGame } from './hooks/useGame';
 import { useSwipe } from './hooks/useSwipe';
 import GameBoard from './components/GameBoard';
 
-// 🔗 MAIN BACKEND LIVE LINK CONNECTIVITY
-const API_BASE_URL = 'https://neon-matrix.onrender.com'; 
-
 function App() {
   const { 
     board, score, bestScore, highestTile, gameState, history, leaderboard, 
@@ -17,7 +14,7 @@ function App() {
   
   const swipeHandlers = useSwipe(handleMove);
   
-  // 🔐 PROFILE SESSIONS
+  // 🔐 PROFILE SESSIONS (LOCAL STORAGE)
   const [playerName, setPlayerName] = useState(() => localStorage.getItem('neonPlayerAlias') || '');
   const [password, setPassword] = useState('');
   const [hasStarted, setHasStarted] = useState(() => !!localStorage.getItem('neonPlayerAlias'));
@@ -36,7 +33,6 @@ function App() {
   const themeClasses = ['hue-rotate-0', 'hue-rotate-90', 'hue-rotate-[-45deg]'];
   const themeNames = ['NEON', 'HACKER', 'SYNTH'];
 
-  // Intercept beforeinstallprompt hook
   useEffect(() => {
     const captureInstallPrompt = (e) => {
       e.preventDefault();
@@ -61,8 +57,7 @@ function App() {
     }
   };
 
-  // 🛠️ REAL-TIME LIVE API CORE AUTHENTICATION
-  const handleAuthSubmit = async (e) => {
+  const handleAuthSubmit = (e) => {
     e.preventDefault();
     setAuthError('');
     setAuthSuccess('');
@@ -73,45 +68,36 @@ function App() {
       return;
     }
 
-    try {
-      if (authTab === 'REGISTER') {
-        // 📤 POST request to Render Backend for Registration
-        const response = await fetch(`${API_BASE_URL}/register`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: usernameClean, password })
-        });
-        
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'REGISTRATION LINK ACCESS DENIED');
+    const localUsers = JSON.parse(localStorage.getItem('neonMatrixUsers')) || [];
 
-        setAuthSuccess('REGISTRATION SUCCESSFUL! SWITCHING TO LOGIN MAIN_FRAME...');
-        setTimeout(() => {
-          setAuthTab('LOGIN');
-          setPassword('');
-          setAuthSuccess('');
-        }, 1500);
-
-      } else {
-        // 📥 POST request to Render Backend for Login Verification
-        const response = await fetch(`${API_BASE_URL}/login`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username: usernameClean, password })
-        });
-
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.message || 'INVALID ALIAS OR ACCESS KEY');
-
-        // Session setup upon successful authentication responses
-        localStorage.setItem('neonPlayerAlias', data.username || usernameClean);
-        setPlayerName(data.username || usernameClean);
-        setHasStarted(true);
-        restart();
+    if (authTab === 'REGISTER') {
+      const userExists = localUsers.some(u => u.username.toLowerCase() === usernameClean.toLowerCase());
+      if (userExists) {
+        setAuthError('ALIAS ALREADY ACCESS-DENIED (TAKEN)');
+        return;
       }
-    } catch (err) {
-      // Catch network server errors or custom backend errors
-      setAuthError(err.message || 'SERVER CORE OFFLINE - TRY AGAIN');
+
+      localUsers.push({ username: usernameClean, password: btoa(password) });
+      localStorage.setItem('neonMatrixUsers', JSON.stringify(localUsers));
+      
+      setAuthSuccess('REGISTRATION SUCCESSFUL! SWITCHING TO LOGIN...');
+      setTimeout(() => {
+        setAuthTab('LOGIN');
+        setPassword('');
+        setAuthSuccess('');
+      }, 1500);
+
+    } else {
+      const userFound = localUsers.find(u => u.username.toLowerCase() === usernameClean.toLowerCase() && u.password === btoa(password));
+      if (!userFound) {
+        setAuthError('INVALID ALIAS OR ENCRYPTION KEY (PASSWORD)');
+        return;
+      }
+
+      localStorage.setItem('neonPlayerAlias', userFound.username);
+      setPlayerName(userFound.username);
+      setHasStarted(true);
+      restart();
     }
   };
 
@@ -342,8 +328,8 @@ function App() {
                     {leaderboard.map((entry, idx) => (
                       <li key={idx} className="flex items-center justify-between text-xs sm:text-sm border-b border-gray-800 pb-2">
                         <div className="flex flex-col">
-                          <span className="text-white font-bold tracking-wider">{idx + 1}. {entry.name}</span>
-                          <span className="text-gray-500 text-[8px] sm:text-[10px]">HIGHEST: <span className="text-[#ff0055]">{entry.highestTile}</span></span>
+                          <span className="text-white font-bold tracking-wider">{idx + 1}. {entry.playerName || entry.name}</span>
+                          <span className="text-gray-500 text-[8px] sm:text-[10px]">HIGHEST: <span className="text-[#ff0055]">{entry.highestTile || '2048'}</span></span>
                         </div>
                         <span className="text-[#00f3ff] font-mono text-lg font-bold">{entry.score}</span>
                       </li>
