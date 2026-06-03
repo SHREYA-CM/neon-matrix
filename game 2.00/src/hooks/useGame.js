@@ -10,7 +10,10 @@ export const useGame = () => {
   const [board, setBoard] = useState(initializeBoard());
   const [score, setScore] = useState(0);
   const [highestTile, setHighestTile] = useState(0);
-  const [bestScore, setBestScore] = useState(() => parseInt(localStorage.getItem('neonMatrixBest')) || 0);
+  
+  // 👇 CHANGE 1: Ab local memory se start nahi hoga, zero se start hoga aur DB aate hi update hoga
+  const [bestScore, setBestScore] = useState(0); 
+  
   const [gameState, setGameState] = useState('PLAYING'); 
   const [history, setHistory] = useState([]);
   const [leaderboard, setLeaderboard] = useState(() => JSON.parse(localStorage.getItem('neonLeaderboard')) || []);
@@ -69,6 +72,11 @@ export const useGame = () => {
         const data = await response.json();
         setLeaderboard(data);
         localStorage.setItem('neonLeaderboard', JSON.stringify(data));
+        
+        // 👇 CHANGE 2: Live Database ke Rank 1 ka score 'BEST' mein set karo
+        if (data && data.length > 0) {
+          setBestScore(data[0].score); 
+        }
       }
     } catch (err) {
       console.error("Leaderboard uplink sync failed:", err);
@@ -187,8 +195,8 @@ export const useGame = () => {
           unlockAchievement('highScoreBreaker', '🏆 HIGH SCORE BREAKER');
         }
         if (newScore > bestScore) {
-          setBestScore(newScore);
-          localStorage.setItem('neonMatrixBest', newScore);
+          setBestScore(newScore); // UI mein instantly update karne ke liye
+          // local storage wali line yahan se hata di hai taaki kachra jama na ho
         }
         return newScore;
       });
