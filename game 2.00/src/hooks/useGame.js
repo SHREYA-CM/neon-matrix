@@ -16,6 +16,9 @@ export const useGame = () => {
   const [leaderboard, setLeaderboard] = useState(() => JSON.parse(localStorage.getItem('neonLeaderboard')) || []);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
+  // 👇 YEH RAHA AAPKA LOCK (Double entry rokne ke liye)
+  const scoreSubmitted = useRef(false);
+
   // --- STATS SYSTEM ---
   const [stats, setStats] = useState(() => {
     const savedStats = JSON.parse(localStorage.getItem('neonStats')) || {};
@@ -113,6 +116,9 @@ export const useGame = () => {
     setHighestTile(0);
     setHistory([]);
     setGameState('PLAYING');
+    
+    // 👇 NAYA GAME SHURU HONE PAR LOCK KHOL DO
+    scoreSubmitted.current = false;
   }, []);
 
   const continueGame = () => setGameState('PLAYING');
@@ -131,6 +137,10 @@ export const useGame = () => {
   const saveToLeaderboard = useCallback(async (playerName) => {
     if (score <= 0) return;
     
+    // 👇 YAHAN PE DOUBLE ENTRY ROKNE KA MAIN LOGIC HAI
+    if (scoreSubmitted.current) return; // Agar submit ho chuka hai, to wapas mud jao
+    scoreSubmitted.current = true;      // Pehli baar aate hi darwaza lock kar do
+
     try {
       const response = await fetch(LEADERBOARD_API_URL, {
         method: 'POST',
@@ -144,6 +154,8 @@ export const useGame = () => {
       }
     } catch (err) {
       console.error("Score submission grid failure:", err);
+      // Agar error aaye to lock wapas khol do taaki baad mein wapas ja sake
+      scoreSubmitted.current = false;
     }
   }, [score, fetchLiveLeaderboard]);
 
